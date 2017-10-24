@@ -7,13 +7,22 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.TextView;
+
+import com.github.nkzawa.socketio.client.IO;
+import com.github.nkzawa.socketio.client.Socket;
+
+import java.net.URISyntaxException;
 
 public class MainActivity extends AppCompatActivity implements SensorEventListener{
 
+    private static final String TAG = "MainActivity";
     private SensorManager sensorManager;
     private Sensor accelerometer;
     private float yValue;
+
+    private Socket socket;
 
     private TextView accelData;
 
@@ -25,6 +34,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         initViews();
 
         initAccelerometer();
+
+        initSocket();
     }
 
     @Override
@@ -37,6 +48,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     protected void onDestroy() {
         super.onDestroy();
         sensorManager.unregisterListener(this);
+        socket.disconnect();
     }
 
     private void initViews() {
@@ -48,10 +60,21 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
     }
 
+    private void initSocket() {
+        try {
+            socket = IO.socket("http://0.0.0.0:8080");
+            socket.connect();
+        } catch (URISyntaxException e) {
+            Log.e(TAG, "initSocket: ", e);
+        }
+    }
+
     @Override
     public void onSensorChanged(SensorEvent event) {
         yValue = event.values[1]; // [x, y, z] are available values
         accelData.setText(String.valueOf(yValue));
+        //Log.d(TAG, "onSensorChanged: "+ yValue);
+        socket.emit("yvalue", yValue);
     }
 
     @Override

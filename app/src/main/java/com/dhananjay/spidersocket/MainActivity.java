@@ -45,13 +45,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         setContentView(R.layout.activity_main); // specifies which layout file to inflate
 
-        ipAddress = PreferenceManager.getDefaultSharedPreferences(getApplication()).getString(PREF_KEY_IP_ADDRESS, null); // check if a valid IP address is already saved
-
         initViews(); // initialize the views
 
         initAccelerometer(); // initialize the sensor
 
-        initSocket(); // initialize the socket
     }
 
     // method executed when the activity resumes
@@ -69,6 +66,17 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                         | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
 
         sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME); // start listening to sensor events
+
+        initSocket(); // initialize the socket
+
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+        sensorManager.unregisterListener(this); // stop receiving sensor updates
+
     }
 
     // last method called before the activity is destroyed
@@ -76,7 +84,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     protected void onDestroy() {
         super.onDestroy();
 
-        sensorManager.unregisterListener(this); // stop receiving sensor updates
 
         // if socket is not null, disconnect it
         if(socket != null){
@@ -99,10 +106,13 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     // initalize socket
     private void initSocket() {
+
+        ipAddress = PreferenceManager.getDefaultSharedPreferences(getApplication()).getString(PREF_KEY_IP_ADDRESS, null); // check if a valid IP address is already saved
+
         // check if the IP address is valid, is so create and connect to the socket
         if( ipAddress != null ){
             try {
-                socket = IO.socket("http://0.0.0.0:8080"); // ip address : port no
+                socket = IO.socket("http://"+ ipAddress +":3000"); // ip address : port no
                 socket.connect();
             } catch (URISyntaxException e) {
                 Log.e(TAG, "initSocket: ", e); // log errors if any
@@ -123,6 +133,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         }
     }
 
+    // called when accuracy of the sensor changes
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
     }
@@ -133,6 +144,5 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         // create an intent to navigate to EditIpActivity
         Intent editIpIntent = new Intent(this, EditIpActivity.class);
         startActivity(editIpIntent);
-        finish(); // destroy this activity
     }
 }
